@@ -59,9 +59,41 @@ static PyObject* pow(PyObject *self, PyObject *args) {
     return tuple;
 }
 
+static PyObject* pow_light(PyObject *self, PyObject *args) {
+    Py_buffer header_hash_buf, nonce64_buf, mix_hash_buf;
+    int block_height;
+    if (!PyArg_ParseTuple(args, "y*y*iy*", &header_hash_buf, &nonce64_buf, &block_height, &mix_hash_buf))
+        return NULL;
+
+    if (header_hash_buf.len != 32 || nonce64_buf.len != 8 || mix_hash_buf.len != 32) {
+        PyErr_SetString(PyExc_ValueError, "Buffer length is not correct");
+        return NULL;
+    }
+
+    const ethash::hash256* header_hash_ptr = (ethash::hash256*)header_hash_buf.buf;
+    uint64_t* nonce64_ptr = (uint64_t*)nonce64_buf.buf;
+    const ethash::hash256* mix_hash_ptr = (ethash::hash256*)mix_hash_buf.buf;
+    ethash::hash256 hash_out;
+
+    const auto epoch_number = ethash::get_epoch_number(block_height);
+
+    if (!context || context->epoch_number != epoch_number)
+        context = ethash::create_epoch_context(epoch_number);
+
+    progpow::hash_one_light(*context, block_height, header_hash_ptr, *nonce64_ptr, mix_hash_ptr, &hash_out);
+
+    PyBuffer_Release(&header_hash_buf);
+    PyBuffer_Release(&nonce64_buf);
+    PyBuffer_Release(&mix_hash_buf);
+
+    PyObject *hash_py = PyBytes_FromStringAndSize((const char *)&hash_out, sizeof(ethash::hash256));
+    return hash_py;
+}
+
 static PyMethodDef methods[] = {
         {"keccak_256", (PyCFunction)keccak_256, METH_VARARGS},
         {"pow", (PyCFunction)pow, METH_VARARGS},
+        {"pow_light", (PyCFunction)pow_light, METH_VARARGS},
         {NULL, NULL}
 };
 
