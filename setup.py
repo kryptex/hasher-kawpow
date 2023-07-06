@@ -1,7 +1,7 @@
 from setuptools import Extension, setup
 
 setup(name='kawpow',
-    version='0.0.2',
+    version='0.0.3',
     ext_modules=[
         Extension(
             'kawpow', [
