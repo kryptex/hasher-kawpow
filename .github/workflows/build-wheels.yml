@@ -9,9 +9,9 @@ jobs:
     env:
       SYSTEM_VERSION_COMPAT: 0 # https://github.com/actions/setup-python/issues/469#issuecomment-1192522949
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Set up Python
-      uses: actions/setup-python@v3
+      uses: actions/setup-python@v5
       with:
         python-version: '3.12.5'
     - name: Install dependencies
@@ -26,7 +26,7 @@ jobs:
         pip install dist/*.whl
         python -m unittest
     - name: Release
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v2
       if: startsWith(github.ref, 'refs/tags/')
       with:
         files: dist/*.whl
