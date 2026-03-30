@@ -9,6 +9,7 @@ jobs:
     env:
       SYSTEM_VERSION_COMPAT: 0 # https://github.com/actions/setup-python/issues/469#issuecomment-1192522949
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+      ARCHFLAGS: "-arch arm64"
     steps:
     - uses: actions/checkout@v6
     - name: Set up Python
