@@ -1,7 +1,7 @@
 from setuptools import Extension, setup
 
 setup(name='kawpow',
-    version='0.0.13',
+    version='0.0.14',
     options={
         'bdist_wheel': {'py_limited_api': 'cp39'}
     },
