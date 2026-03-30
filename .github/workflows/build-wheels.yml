@@ -4,7 +4,7 @@ jobs:
   build:
     strategy:
       matrix:
-        os: [ubuntu-20.04, macos-13]
+        os: [ubuntu-20.04, macos-latest]
     runs-on: ${{ matrix.os }}
     env:
       SYSTEM_VERSION_COMPAT: 0 # https://github.com/actions/setup-python/issues/469#issuecomment-1192522949
