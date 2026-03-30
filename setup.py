@@ -2,6 +2,9 @@ from setuptools import Extension, setup
 
 setup(name='kawpow',
     version='0.0.4',
+    options={
+        'bdist_wheel': {'py_limited_api': 'cp39'}
+    },
     ext_modules=[
         Extension(
             'kawpow', [
@@ -17,6 +20,7 @@ setup(name='kawpow',
                 ],
             include_dirs=["src", "src/include"],
             language="c++",
-            extra_compile_args=['-std=c++0x']
+            extra_compile_args=['-std=c++0x'],
+            py_limited_api=True
             )],
     )
