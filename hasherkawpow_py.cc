@@ -6,6 +6,7 @@
 #include "ethash.hpp"
 #include "progpow.hpp"
 #include "keccak.hpp"
+#include "keccak/keccak_mb.h"
 #include "uint256.h"
 #include "helpers.hpp"
 
@@ -56,6 +57,38 @@ static PyObject* keccak_merkle_root(PyObject *self, PyObject *args) {
     }
 
     return PyBytes_FromStringAndSize((const char*)h.bytes, 32);
+}
+
+// Batched keccak_merkle_root: extras packs count extra-nonce blobs of extra_len bytes each,
+// and the miners are hashed in SIMD lockstep (8-way AVX-512 / 4-way AVX2 / scalar).
+// Returns count*32 bytes of merkle roots in extras order. Releases the GIL: for a broadcast
+// to tens of thousands of miners the call runs for milliseconds.
+static PyObject* keccak_merkle_roots(PyObject *self, PyObject *args) {
+    const char *prefix, *extras, *rct, *branch;
+    Py_ssize_t prefix_len, extras_len, rct_len, branch_len, extra_len;
+    if (!PyArg_ParseTuple(args, "y#y#ny#y#", &prefix, &prefix_len, &extras, &extras_len,
+                          &extra_len, &rct, &rct_len, &branch, &branch_len))
+        return NULL;
+
+    if (prefix_len < 1 || prefix_len > 4096 || extra_len < 1 || extra_len > prefix_len ||
+        extras_len % extra_len != 0 || rct_len != 32 || branch_len % 32 != 0) {
+        PyErr_SetString(PyExc_ValueError, "Buffer length is not correct");
+        return NULL;
+    }
+
+    const Py_ssize_t count = extras_len / extra_len;
+    PyObject* out = PyBytes_FromStringAndSize(NULL, count * 32);
+    if (!out)
+        return NULL;
+    char* out_buf = PyBytes_AsString(out);
+
+    Py_BEGIN_ALLOW_THREADS
+    keccak_merkle_roots_mb((const uint8_t*)prefix, (size_t)prefix_len, (size_t)extra_len,
+                           (const uint8_t*)extras, (const uint8_t*)rct,
+                           (const uint8_t*)branch, (size_t)branch_len / 32,
+                           (size_t)count, (uint8_t*)out_buf);
+    Py_END_ALLOW_THREADS
+    return out;
 }
 
 static ethash::epoch_context_ptr context{nullptr, nullptr};
@@ -129,6 +162,7 @@ static PyObject* pow_light(PyObject *self, PyObject *args) {
 static PyMethodDef methods[] = {
         {"keccak_256", (PyCFunction)keccak_256, METH_VARARGS},
         {"keccak_merkle_root", (PyCFunction)keccak_merkle_root, METH_VARARGS},
+        {"keccak_merkle_roots", (PyCFunction)keccak_merkle_roots, METH_VARARGS},
         {"pow", (PyCFunction)pow, METH_VARARGS},
         {"pow_light", (PyCFunction)pow_light, METH_VARARGS},
         {NULL, NULL}
