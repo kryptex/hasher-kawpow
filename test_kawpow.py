@@ -11,6 +11,33 @@ class TestEthash(unittest.TestCase):
         
         self.assertEqual(h, hash_empty)
 
+    def test_keccak_merkle_root(self):
+        prefix = bytes(range(96))
+        extra = bytes.fromhex('3282000104f3a2b1')
+        rct = kawpow.keccak_256(b'rct')
+        branch = [kawpow.keccak_256(bytes([i])) for i in range(6)]
+
+        spliced = prefix[:-len(extra)] + extra
+        expected = kawpow.keccak_256(kawpow.keccak_256(spliced) + rct + bytes(32))
+        for node in branch:
+            expected = kawpow.keccak_256(expected + node)
+
+        got = kawpow.keccak_merkle_root(prefix, extra, rct, b''.join(branch))
+        self.assertEqual(got, expected)
+
+    def test_keccak_merkle_root_no_extra_no_branch(self):
+        prefix = b'\xab' * 43
+        expected = kawpow.keccak_256(kawpow.keccak_256(prefix) + bytes(32) + bytes(32))
+        self.assertEqual(kawpow.keccak_merkle_root(prefix, b'', bytes(32), b''), expected)
+
+    def test_keccak_merkle_root_rejects_bad_lengths(self):
+        with self.assertRaises(ValueError):
+            kawpow.keccak_merkle_root(b'abc', b'abcd', bytes(32), b'')
+        with self.assertRaises(ValueError):
+            kawpow.keccak_merkle_root(b'abc', b'', bytes(31), b'')
+        with self.assertRaises(ValueError):
+            kawpow.keccak_merkle_root(b'abc', b'', bytes(32), bytes(33))
+
     def test_pow(self):
         block_height = 2543241
         nonce = int.to_bytes(0xc9b1000029c69813, 8, 'little', signed=False)
