@@ -1,7 +1,7 @@
 from setuptools import Extension, setup
 
 setup(name='kawpow',
-    version='0.0.16',
+    version='0.0.17',
     options={
         'bdist_wheel': {'py_limited_api': 'cp312'}
     },
@@ -14,6 +14,7 @@ setup(name='kawpow',
                 "src/keccak/keccak.cpp",
                 "src/keccak/keccakf800.cpp",
                 "src/keccak/keccakf1600.cpp",
+                "src/keccak/keccak_mb.cpp",
                 "src/uint256.cpp",
                 "src/utilstrencodings.cpp",
                 'hasherkawpow_py.cc'
