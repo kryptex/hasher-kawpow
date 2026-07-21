@@ -37,6 +37,12 @@ static const uint64_t round_constants[24] = {
     0x8000000080008008,
 };
 
+// BMI/BMI2 (andn in the chi step) makes the permutation ~15% faster, but the wheel must
+// keep running on pre-Haswell CPUs, so dispatch per-CPU at load time instead of via -march.
+// gcc/glibc only; macOS builds (arm64) take the plain path.
+#if defined(__x86_64__) && defined(__gnu_linux__) && defined(__GNUC__) && !defined(__clang__)
+__attribute__((target_clones("default", "arch=x86-64-v3")))
+#endif
 void ethash_keccakf1600(uint64_t state[25]) noexcept
 {
     /* The implementation based on the "simple" implementation by Ronny Van Keer. */
